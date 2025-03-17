@@ -1,154 +1,15 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reservas de Laboratorio - EICT</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .header-logo {
-            max-height: 50px;
-            margin: 10px;
-        }
-        .reservation-table {
-            margin-top: 20px;
-        }
-        .form-container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #fff;
-        }
-    </style>
-</head>
-<body class="bg-light">
-    <div class="container">
-        <header class="d-flex justify-content-between align-items-center py-3">
-            <div class="logo">Logo PUCMM</div>
-            <h1 class="h3">Reservas de Laboratorio - EICT</h1>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reservationModal">
-                Agregar Reserva
-            </button>
-        </header>
+<script>
+    // Configuración de la API
+    const API_URL = 'TU_API_GATEWAY_URL';
 
-        <!-- Tabla de Reservas -->
-        <div class="card reservation-table">
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-3">
-                    <h5 class="card-title">Reservas Activas</h5>
-                    <div>
-                        <button class="btn btn-outline-secondary btn-sm" id="showPastReservations">
-                            Ver Reservas Pasadas
-                        </button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Laboratorio</th>
-                                <th>Fecha y Hora</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reservationsTableBody">
-                            <!-- Las reservas se cargarán dinámicamente aquí -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de Registro de Reserva -->
-        <div class="modal fade" id="reservationModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Registro Reserva</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="reservationForm">
-                            <div class="mb-3">
-                                <label for="id" class="form-label">ID</label>
-                                <input type="text" class="form-control" id="id" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="nombre" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="correo" class="form-label">Correo</label>
-                                <input type="email" class="form-control" id="correo" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="laboratorio" class="form-label">Laboratorio</label>
-                                <select class="form-select" id="laboratorio" required>
-                                    <option value="">Seleccionar Laboratorio</option>
-                                    <option value="REDES">REDES</option>
-                                    <option value="Computacion">Computación</option>
-                                    <option value="Comunicaciones">Comunicaciones</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="fecha" class="form-label">Fecha y Hora</label>
-                                <input type="datetime-local" class="form-control" id="fecha" required>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">OK</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Configuración inicial
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configurar restricciones de fecha y hora
-            const fechaInput = document.getElementById('fecha');
-            const now = new Date();
-            const minTime = new Date();
-            minTime.setHours(8, 0, 0, 0); // 8 AM
-            const maxTime = new Date();
-            maxTime.setHours(22, 0, 0, 0); // 10 PM
-
-            // Formatear fecha mínima para el input datetime-local
-            const minDate = now.toISOString().split('T')[0];
-            fechaInput.min = `${minDate}T08:00`;
-
-            // Manejar el envío del formulario
-            document.getElementById('reservationForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Aquí irá la lógica para enviar los datos a AWS Lambda
-                // Por ahora solo cerraremos el modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
-                modal.hide();
-            });
-
-            // Cargar reservas (esto se conectará con DynamoDB más adelante)
-            loadReservations();
-        });
-
-        async function loadReservations() {
-            // Aquí irá la lógica para cargar las reservas desde DynamoDB
-            // Por ahora mostraremos datos de ejemplo
-            const mockReservations = [
-                { id: '1911111', nombre: 'Estudiante 1', laboratorio: 'REDES', fecha: '11/07/2023 10:00 - 11:00' },
-                { id: '1112323', nombre: 'Estudiante 2', laboratorio: 'Computacion', fecha: '11/07/2023 10:00 - 11:00' },
-                { id: '1231232', nombre: 'Estudiante 3', laboratorio: 'Comunicaciones', fecha: '11/07/2023 10:00 - 11:00' }
-            ];
-
+    // Función para cargar reservas
+    async function loadReservations() {
+        try {
+            const response = await fetch(`${API_URL}/reservas`);
+            const data = await response.json();
+            
             const tbody = document.getElementById('reservationsTableBody');
-            tbody.innerHTML = mockReservations.map(reservation => `
+            tbody.innerHTML = data.map(reservation => `
                 <tr>
                     <td>${reservation.id}</td>
                     <td>${reservation.nombre}</td>
@@ -156,7 +17,82 @@
                     <td>${reservation.fecha}</td>
                 </tr>
             `).join('');
+        } catch (error) {
+            console.error('Error al cargar reservas:', error);
         }
-    </script>
-</body>
-</html> 
+    }
+
+    // Función para crear reserva
+    async function createReservation(event) {
+        event.preventDefault();
+        
+        const formData = {
+            id: document.getElementById('id').value,
+            nombre: document.getElementById('nombre').value,
+            correo: document.getElementById('correo').value,
+            laboratorio: document.getElementById('laboratorio').value,
+            fecha: document.getElementById('fecha').value
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/reservas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('Reserva creada exitosamente');
+                document.getElementById('reservationForm').reset();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
+                modal.hide();
+                loadReservations();
+            } else {
+                alert(result.error || 'Error al crear la reserva');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al procesar la solicitud');
+        }
+    }
+
+    // Función para eliminar reserva
+    async function deleteReservation(id) {
+        if (confirm('¿Está seguro de eliminar esta reserva?')) {
+            try {
+                const response = await fetch(`${API_URL}/reservas/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Reserva eliminada exitosamente');
+                    loadReservations();
+                } else {
+                    alert('Error al eliminar la reserva');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud');
+            }
+        }
+    }
+
+    // Configuración inicial
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cargar reservas iniciales
+        loadReservations();
+
+        // Configurar el formulario
+        document.getElementById('reservationForm').addEventListener('submit', createReservation);
+
+        // Configurar restricciones de fecha y hora
+        const fechaInput = document.getElementById('fecha');
+        const now = new Date();
+        const minDate = now.toISOString().split('T')[0];
+        fechaInput.min = `${minDate}T08:00`;
+    });
+</script> 
