@@ -10,7 +10,8 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'Origin': 'https://merp0001.github.io'
-                }
+                },
+                mode: 'cors' // Explícitamente indicar que es una petición CORS
             });
             
             if (!response.ok) {
@@ -25,38 +26,71 @@
                 return;
             }
 
+            if (!Array.isArray(data)) {
+                console.error('La respuesta no es un array:', data);
+                tbody.innerHTML = '<tr><td colspan="6">No hay reservas disponibles</td></tr>';
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No hay reservas activas</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = data.map(reservation => `
                 <tr>
-                    <td>${reservation.studentId}</td>
-                    <td>${reservation.name}</td>
-                    <td>${reservation.email}</td>
-                    <td>${reservation.laboratory}</td>
+                    <td>${reservation.studentId || ''}</td>
+                    <td>${reservation.name || ''}</td>
+                    <td>${reservation.email || ''}</td>
+                    <td>${reservation.laboratory || ''}</td>
                     <td>${formatDateTime(reservation.startTime)}</td>
                     <td>${formatDateTime(reservation.endTime)}</td>
                 </tr>
             `).join('');
         } catch (error) {
             console.error('Error al cargar reservas:', error);
+            const tbody = document.getElementById('reservationsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6">Error al cargar las reservas</td></tr>';
+            }
         }
     }
 
     // Función para formatear fecha y hora
     function formatDateTime(dateTimeStr) {
-        const date = new Date(dateTimeStr);
-        return date.toLocaleString('es-ES', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        if (!dateTimeStr) return '';
+        try {
+            const date = new Date(dateTimeStr);
+            if (isNaN(date.getTime())) return 'Fecha inválida';
+            return date.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return 'Error en formato';
+        }
     }
 
     // Función para crear reserva
     async function createReservation(event) {
         event.preventDefault();
         
-        const startTime = new Date(document.getElementById('fecha').value);
+        const fechaInput = document.getElementById('fecha');
+        if (!fechaInput || !fechaInput.value) {
+            alert('Por favor seleccione una fecha y hora');
+            return;
+        }
+
+        const startTime = new Date(fechaInput.value);
+        if (!validateDateTime(startTime)) {
+            alert('Por favor seleccione un horario entre 8:00 AM y 10:00 PM');
+            return;
+        }
+
         const endTime = new Date(startTime.getTime() + (60 * 60 * 1000)); // Una hora después
 
         const formData = {
@@ -68,6 +102,12 @@
             endTime: endTime.toISOString()
         };
 
+        // Validar campos requeridos
+        if (!formData.studentId || !formData.name || !formData.email || !formData.laboratory) {
+            alert('Todos los campos son requeridos');
+            return;
+        }
+
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -75,6 +115,7 @@
                     'Content-Type': 'application/json',
                     'Origin': 'https://merp0001.github.io'
                 },
+                mode: 'cors', // Explícitamente indicar que es una petición CORS
                 body: JSON.stringify(formData)
             });
 
@@ -93,12 +134,13 @@
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al procesar la solicitud');
+            alert('Error al procesar la solicitud: ' + error.message);
         }
     }
 
     // Función para validar horario
     function validateDateTime(dateTime) {
+        if (!dateTime || isNaN(dateTime.getTime())) return false;
         const hour = dateTime.getHours();
         return hour >= 8 && hour <= 22;
     }
@@ -108,12 +150,15 @@
         const form = document.getElementById('reservationForm');
         if (form) {
             form.addEventListener('submit', createReservation);
+        } else {
+            console.error('Formulario de reserva no encontrado');
         }
 
         // Configurar restricciones de fecha y hora
         const fechaInput = document.getElementById('fecha');
         if (fechaInput) {
             const now = new Date();
+            now.setMinutes(0, 0, 0); // Redondear a la hora actual
             const minDate = now.toISOString().split('.')[0].slice(0, -3);
             fechaInput.min = minDate;
             
@@ -128,6 +173,8 @@
                     this.value = '';
                 }
             });
+        } else {
+            console.error('Campo de fecha no encontrado');
         }
 
         // Cargar reservas iniciales
