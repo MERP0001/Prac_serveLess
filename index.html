@@ -5,16 +5,34 @@
     // Función para cargar reservas
     async function loadReservations() {
         try {
-            const response = await fetch(`${API_URL}/reservas`);
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://merp0001.github.io'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             
             const tbody = document.getElementById('reservationsTableBody');
+            if (!tbody) {
+                console.error('Elemento reservationsTableBody no encontrado');
+                return;
+            }
+
             tbody.innerHTML = data.map(reservation => `
                 <tr>
-                    <td>${reservation.id}</td>
-                    <td>${reservation.nombre}</td>
-                    <td>${reservation.laboratorio}</td>
-                    <td>${reservation.fecha}</td>
+                    <td>${reservation.studentId}</td>
+                    <td>${reservation.name}</td>
+                    <td>${reservation.email}</td>
+                    <td>${reservation.laboratory}</td>
+                    <td>${formatDateTime(reservation.startTime)}</td>
+                    <td>${formatDateTime(reservation.endTime)}</td>
                 </tr>
             `).join('');
         } catch (error) {
@@ -22,23 +40,40 @@
         }
     }
 
+    // Función para formatear fecha y hora
+    function formatDateTime(dateTimeStr) {
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
     // Función para crear reserva
     async function createReservation(event) {
         event.preventDefault();
         
+        const startTime = new Date(document.getElementById('fecha').value);
+        const endTime = new Date(startTime.getTime() + (60 * 60 * 1000)); // Una hora después
+
         const formData = {
-            id: document.getElementById('id').value,
-            nombre: document.getElementById('nombre').value,
-            correo: document.getElementById('correo').value,
-            laboratorio: document.getElementById('laboratorio').value,
-            fecha: document.getElementById('fecha').value
+            studentId: document.getElementById('id').value,
+            name: document.getElementById('nombre').value,
+            email: document.getElementById('correo').value,
+            laboratory: document.getElementById('laboratorio').value,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString()
         };
 
         try {
-            const response = await fetch(`${API_URL}/reservas`, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://merp0001.github.io'
                 },
                 body: JSON.stringify(formData)
             });
@@ -48,8 +83,10 @@
             if (response.ok) {
                 alert('Reserva creada exitosamente');
                 document.getElementById('reservationForm').reset();
-                const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
-                modal.hide();
+                const modalElement = document.getElementById('reservationModal');
+                if (modalElement && bootstrap.Modal.getInstance(modalElement)) {
+                    bootstrap.Modal.getInstance(modalElement).hide();
+                }
                 loadReservations();
             } else {
                 alert(result.error || 'Error al crear la reserva');
@@ -60,39 +97,40 @@
         }
     }
 
-    // Función para eliminar reserva
-    async function deleteReservation(id) {
-        if (confirm('¿Está seguro de eliminar esta reserva?')) {
-            try {
-                const response = await fetch(`${API_URL}/reservas/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    alert('Reserva eliminada exitosamente');
-                    loadReservations();
-                } else {
-                    alert('Error al eliminar la reserva');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al procesar la solicitud');
-            }
-        }
+    // Función para validar horario
+    function validateDateTime(dateTime) {
+        const hour = dateTime.getHours();
+        return hour >= 8 && hour <= 22;
     }
 
     // Configuración inicial
     document.addEventListener('DOMContentLoaded', function() {
-        // Cargar reservas iniciales
-        loadReservations();
-
-        // Configurar el formulario
-        document.getElementById('reservationForm').addEventListener('submit', createReservation);
+        const form = document.getElementById('reservationForm');
+        if (form) {
+            form.addEventListener('submit', createReservation);
+        }
 
         // Configurar restricciones de fecha y hora
         const fechaInput = document.getElementById('fecha');
-        const now = new Date();
-        const minDate = now.toISOString().split('T')[0];
-        fechaInput.min = `${minDate}T08:00`;
+        if (fechaInput) {
+            const now = new Date();
+            const minDate = now.toISOString().split('.')[0].slice(0, -3);
+            fechaInput.min = minDate;
+            
+            // Establecer el paso a 1 hora (3600 segundos)
+            fechaInput.step = "3600";
+            
+            // Validar que la hora esté entre 8 AM y 10 PM
+            fechaInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                if (!validateDateTime(selectedDate)) {
+                    alert('Por favor seleccione un horario entre 8:00 AM y 10:00 PM');
+                    this.value = '';
+                }
+            });
+        }
+
+        // Cargar reservas iniciales
+        loadReservations();
     });
 </script> 
